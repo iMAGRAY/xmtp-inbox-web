@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { DateDivider } from "../component-library/components/DateDivider/DateDivider";
 import { FullConversation } from "../component-library/components/FullConversation/FullConversation";
@@ -44,6 +44,23 @@ export const FullConversationWrapper = () => {
       }
     }
   }, [conversationKey, hasMore, messages, endTime]);
+
+  console.log("FullConversationWrapper for conversationKey", conversationKey);
+
+  // Timer that reloads the conversation every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (conversationKey) {
+        console.log(
+          "Reloading conversation for conversationKey",
+          conversationKey,
+        );
+        endTime.set(conversationKey, new Date());
+        setEndTime(new Map(endTime));
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  });
 
   return (
     <div

@@ -7,9 +7,19 @@ const useGetMessages = (conversationKey: string, endTime?: Date) => {
   const convoMessages = useXmtpStore((state) =>
     state.convoMessages.get(conversationKey),
   );
-  const conversation = useXmtpStore((state) =>
-    state.conversations.get(conversationKey),
-  );
+  let conversation = useXmtpStore((state) => {
+    let foundConvo = state.conversations.get(conversationKey);
+    if (!foundConvo) {
+      // Iterate through conversations and find where the key includes the string 0x00000000
+      for (const [key, value] of state.conversations) {
+        if (key.includes("0x000000000000")) {
+          foundConvo = value;
+        }
+      }
+    }
+    return foundConvo;
+  });
+  console.log("useGetMessages: ", conversation);
   const addMessages = useXmtpStore((state) => state.addMessages);
   const [hasMore, setHasMore] = useState<Map<string, boolean>>(new Map());
 

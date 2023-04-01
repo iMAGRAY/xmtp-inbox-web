@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useXmtpStore } from "../store/xmtp";
 
 const useSendMessage = (conversationId: string) => {
-  console.log('useSendMessage convoId: ', conversationId);
+  console.log("useSendMessage convoId: ", conversationId);
   const conversations = useXmtpStore((state) => state.conversations);
   console.log(conversations);
   let selectedConversation = conversations.get(conversationId);
@@ -10,19 +10,22 @@ const useSendMessage = (conversationId: string) => {
   if (!selectedConversation) {
     // Iterate through conversations and find where the key includes the string 0x00000000
     for (const [key, value] of conversations) {
-      if (key.includes('0x000000000000')) {
+      if (key.includes("0x000000000000")) {
         selectedConversation = value;
       }
     }
   }
-  console.log('useSendMessage: ', selectedConversation);
-
+  console.log("useSendMessage: ", selectedConversation);
 
   const sendMessage = useCallback(
     async (message: string) => {
-      console.log('sending message: ', message);
-      console.log('currently selectedConversation: ', selectedConversation);
-      await selectedConversation?.send(message);
+      console.log("sending message: ", message);
+      console.log("currently selectedConversation: ", selectedConversation);
+      try {
+        await selectedConversation?.send(message);
+      } catch (error) {
+        console.log("Error sending message: ", error);
+      }
     },
     [selectedConversation],
   );
