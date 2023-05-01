@@ -39,8 +39,6 @@ const clientOptions = {
 };
 
 const useInitXmtpClient = () => {
-  // track if an update is in flight
-  const updatingRef = useRef(false);
   // XMTP address status
   const [status, setStatus] = useState<ClientStatus | undefined>();
   // is there a pending signature?
@@ -110,16 +108,11 @@ const useInitXmtpClient = () => {
   // the code in this effect should only run once
   useEffect(() => {
     const updateStatus = async () => {
-      // prevent this code from running when it's already in flight
-      if (updatingRef.current) {
-        return;
-      }
       // skip this if we already have a client
       // skip this if the client is busy
       // effectively, once these conditions are met,
       // this code will only run once
       if (!client && !isLoading && signer) {
-        updatingRef.current = true;
         const address = await signer.getAddress();
         let keys = loadKeys(address);
         // check if we already have the keys
@@ -169,7 +162,6 @@ const useInitXmtpClient = () => {
         }
         // initialize client
         await initialize({ keys, options: clientOptions, signer });
-        updatingRef.current = false;
       }
     };
     updateStatus();

@@ -12,7 +12,7 @@ import { useClient } from "@xmtp/react-sdk";
 
 const OnboardingPage: NextPage = () => {
   const resetXmtpState = useXmtpStore((state) => state.resetXmtpState);
-  const { address } = useAccount();
+  const { address, isDisconnected } = useAccount();
   const { openConnectModal } = useConnectModal();
   const { client, isLoading, status, setStatus, resolveCreate, resolveEnable } =
     useInitXmtpClient();
@@ -57,7 +57,14 @@ const OnboardingPage: NextPage = () => {
       <OnboardingStep
         step={step}
         isLoading={isLoading}
-        onConnect={openConnectModal}
+        onConnect={() => {
+          // In order for Rainbow Kit modal to return the expected connect, the application must be disconnected.
+          if (!isDisconnected) {
+            disconnectWagmi();
+            resetWagmi();
+          }
+          openConnectModal?.();
+        }}
         onCreate={resolveCreate}
         onEnable={resolveEnable}
         onDisconnect={async () => {
