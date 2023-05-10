@@ -51,6 +51,7 @@ const useInitXmtpClient = () => {
   const [signing, setSigning] = useState(false);
   const { data: signer } = useSigner();
   const { connect: connectWallet } = useConnect();
+  const [isError, setIsError] = useState(false);
 
   /**
    * In order to have more granular control of the onboarding process, we must
@@ -116,70 +117,74 @@ const useInitXmtpClient = () => {
   // the code in this effect should only run once
   useEffect(() => {
     const updateStatus = async () => {
-      // onboarding is in progress
-      if (onboardingRef.current) {
-        // the signer has changed, restart the onboarding process
-        if (signer !== signerRef.current) {
-          setStatus(undefined);
-          setSigning(false);
-        } else {
-          // onboarding in progress and signer is the same, do nothing
-          return;
+      try {
+        // onboarding is in progress
+        if (onboardingRef.current) {
+          // the signer has changed, restart the onboarding process
+          if (signer !== signerRef.current) {
+            setStatus(undefined);
+            setSigning(false);
+          } else {
+            // onboarding in progress and signer is the same, do nothing
+            return;
+          }
         }
-      }
-      // skip this if we already have a client and ensure we have a signer
-      if (!client && signer) {
-        onboardingRef.current = true;
-        const address = await signer.getAddress();
-        let keys = loadKeys(address);
-        // check if we already have the keys
-        if (keys) {
-          // resolve client promises
-          createResolve();
-          enableResolve();
-          // no signatures needed
-          setStatus("enabled");
-        } else {
-          // demo mode, wallet won't require any signatures
-          if (isAppEnvDemo()) {
+        // skip this if we already have a client and ensure we have a signer
+        if (!client && signer) {
+          onboardingRef.current = true;
+          const address = await signer.getAddress();
+          let keys = loadKeys(address);
+          // check if we already have the keys
+          if (keys) {
             // resolve client promises
             createResolve();
             enableResolve();
+            // no signatures needed
+            setStatus("enabled");
           } else {
-            // no keys found, but maybe the address has already been created
-            // let's check
-            const canMessage = await canMessageUser(address, clientOptions);
-            if (canMessage) {
-              // resolve client promise
+            // demo mode, wallet won't require any signatures
+            if (isAppEnvDemo()) {
+              // resolve client promises
               createResolve();
-              // identity has been created
-              setStatus("created");
+              enableResolve();
             } else {
-              // no identity on the network
-              setStatus("new");
+              // no keys found, but maybe the address has already been created
+              // let's check
+              const canMessage = await canMessageUser(address, clientOptions);
+              if (canMessage) {
+                // resolve client promise
+                createResolve();
+                // identity has been created
+                setStatus("created");
+              } else {
+                // no identity on the network
+                setStatus("new");
+              }
             }
+            // get client keys
+            keys = await Client.getKeys(signer, {
+              ...clientOptions,
+              // we don't need to publish the contact here since it
+              // will happen when we create the client later
+              skipContactPublishing: true,
+              // we can skip persistence on the keystore for this short-lived
+              // instance
+              persistConversations: false,
+              preCreateIdentityCallback,
+              preEnableIdentityCallback,
+            });
+            // all signatures have been accepted
+            setStatus("enabled");
+            setSigning(false);
+            // persist client keys
+            storeKeys(address, keys);
           }
-          // get client keys
-          keys = await Client.getKeys(signer, {
-            ...clientOptions,
-            // we don't need to publish the contact here since it
-            // will happen when we create the client later
-            skipContactPublishing: true,
-            // we can skip persistence on the keystore for this short-lived
-            // instance
-            persistConversations: false,
-            preCreateIdentityCallback,
-            preEnableIdentityCallback,
-          });
-          // all signatures have been accepted
-          setStatus("enabled");
-          setSigning(false);
-          // persist client keys
-          storeKeys(address, keys);
+          // initialize client
+          await initialize({ keys, options: clientOptions, signer });
+          onboardingRef.current = false;
         }
-        // initialize client
-        await initialize({ keys, options: clientOptions, signer });
-        onboardingRef.current = false;
+      } catch {
+        setIsError(true);
       }
     };
     updateStatus();
@@ -197,6 +202,7 @@ const useInitXmtpClient = () => {
     resolveEnable,
     status,
     setStatus,
+    isError,
   };
 };
 

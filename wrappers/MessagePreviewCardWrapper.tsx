@@ -18,6 +18,9 @@ export const MessagePreviewCardWrapper = ({
   const recipientWalletAddress = useXmtpStore(
     (state) => state.recipientWalletAddress,
   );
+  const loadingConversations = useXmtpStore(
+    (state) => state.loadingConversations,
+  );
   const setRecipientWalletAddress = useXmtpStore(
     (state) => state.setRecipientWalletAddress,
   );
@@ -60,6 +63,9 @@ export const MessagePreviewCardWrapper = ({
       datetime={previewMessage?.sent}
       displayAddress={previewEnsName || shortAddress(convo?.peerAddress || "")}
       onClick={() => {
+        if (loadingConversations) {
+          return null;
+        }
         if (convo) {
           onConvoClick?.(convo);
         }

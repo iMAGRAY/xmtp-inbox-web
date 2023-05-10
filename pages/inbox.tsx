@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import useListConversations from "../hooks/useListConversations";
 import { useXmtpStore } from "../store/xmtp";
 import {
@@ -79,16 +79,19 @@ const Inbox: React.FC<{ children?: React.ReactNode }> = () => {
   // XMTP Hooks
   useListConversations();
 
-  const orderByLatestMessage = (
-    convoA: Conversation,
-    convoB: Conversation,
-  ): number => {
-    const convoALastMessageDate =
-      previewMessages.get(getConversationId(convoA))?.sent || new Date();
-    const convoBLastMessageDate =
-      previewMessages.get(getConversationId(convoB))?.sent || new Date();
-    return convoALastMessageDate < convoBLastMessageDate ? 1 : -1;
-  };
+  const sortedMessages = useMemo(() => {
+    const orderByLatestMessage = (
+      convoA: Conversation,
+      convoB: Conversation,
+    ): number => {
+      const convoALastMessageDate =
+        previewMessages.get(getConversationId(convoA))?.sent || new Date();
+      const convoBLastMessageDate =
+        previewMessages.get(getConversationId(convoB))?.sent || new Date();
+      return convoALastMessageDate < convoBLastMessageDate ? 1 : -1;
+    };
+    return Array.from(conversations.values()).sort(orderByLatestMessage);
+  }, [conversations]);
 
   return (
     <div className="bg-white w-full md:h-full overflow-auto flex flex-col md:flex-row">
@@ -108,14 +111,12 @@ const Inbox: React.FC<{ children?: React.ReactNode }> = () => {
                   recipientEnteredValue &&
                   !loadingConversations
                     ? [<MessagePreviewCardWrapper key="default" />]
-                    : Array.from(conversations.values())
-                        .sort(orderByLatestMessage)
-                        .map((convo) => (
-                          <MessagePreviewCardWrapper
-                            key={getConversationId(convo)}
-                            convo={convo}
-                          />
-                        ))
+                    : sortedMessages.map((convo) => (
+                        <MessagePreviewCardWrapper
+                          key={getConversationId(convo)}
+                          convo={convo}
+                        />
+                      ))
                 }
               />
             </div>

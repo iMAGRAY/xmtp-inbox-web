@@ -9,13 +9,21 @@ import { classNames, isAppEnvDemo, wipeKeys } from "../helpers";
 import { OnboardingStep } from "../component-library/components/OnboardingStep/OnboardingStep";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useClient } from "@xmtp/react-sdk";
+import { ErrorPage } from "../component-library/pages/ErrorPage/ErrorPage";
 
 const OnboardingPage: NextPage = () => {
   const resetXmtpState = useXmtpStore((state) => state.resetXmtpState);
   const { address } = useAccount();
   const { openConnectModal } = useConnectModal();
-  const { client, isLoading, status, setStatus, resolveCreate, resolveEnable } =
-    useInitXmtpClient();
+  const {
+    client,
+    isLoading,
+    status,
+    setStatus,
+    resolveCreate,
+    resolveEnable,
+    isError,
+  } = useInitXmtpClient();
   const { disconnect: disconnectWagmi, reset: resetWagmi } = useDisconnect();
   const { disconnect: disconnectClient } = useClient();
   const router = useRouter();
@@ -52,7 +60,9 @@ const OnboardingPage: NextPage = () => {
     }
   }, [status]);
 
-  return (
+  return isError ? (
+    <ErrorPage header="" description="" subtext="" />
+  ) : (
     <div className={classNames("h-screen", "w-full", "overflow-auto")}>
       <OnboardingStep
         step={step}
